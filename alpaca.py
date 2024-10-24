@@ -60,15 +60,25 @@ class ALPaCA:
                 Lambda_j = Phi_j.T @ Phi_j + Lambda_0 # (n_phi, n_phi)
                 Lambda_j_inv = jnp.linalg.inv(Lambda_j) # TODO: Avoid inversion
                 Sigma_j = (1 + phi_j.T @ Lambda_j_inv @ phi_j) @ self.Sigma_eps # (n_y, n_y)
-                Kbar_j = Lambda_j_inv @ (Phi_j.T @ Y_j + Lambda_0 @ Kbar_0)
+                Kbar_j = Lambda_j_inv @ (Phi_j.T @ Y_j + Lambda_0 @ Kbar_0) # (n_phi, n_y)
 
                 # Update loss (eq. 11)
                 y_delta = y_jp1 - Kbar_j.T @ phi_j
                 loss += (
                     self.ny * jnp.log(1 + phi_j.T @ Lambda_j_inv @ phi_j)
                     + y_delta.T @ jnp.linalg.inv(Sigma_j) @ y_delta
-                )
-
-            loss = loss / J
-
+                ) / J
+            return loss    
         return K0, Lamda0, w
+    
+def ALPaCA(nn.Module):
+    phi: nn.Module
+    Sigma_eps: jnp.ndarray
+    n_y: int
+    n_x: int
+    n_phi: int
+
+    def setup(self):
+        self.Kbar_0 = self.param('Kbar_0', nn.zeros_init(), (self.n_phi, self.n_y))
+        self.L0 = self.param('L0', nn.zeros_init(), (self.n_phi, self.n_phi))
+        nn.share_scope(self, self.phi)
