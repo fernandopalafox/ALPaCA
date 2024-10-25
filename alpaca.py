@@ -39,6 +39,7 @@ class ALPaCA(nn.Module):
             D (tuple): tuple of Dxs and Dys, where:
                 - Dxs (jnp.ndarray): input trajectories with shape (J, tau, n_x)
                 - Dys (jnp.ndarray): target trajectories with shape (J, tau, n_y)
+                - Mini-batch of J trajectories from a dataset of M trajectories.
 
         Returns:
             jnp.ndarray: averaged loss across sampled trajectories.
