@@ -1,7 +1,15 @@
 import jax
 import jax.numpy as jnp
 
-def generate_sinusoid_data(J, tau, key, amplitude_range=(0.1, 5.0), phase_range=(0.0, jnp.pi)):
+
+def generate_sinusoid_data(
+    J: int,
+    tau: int,
+    key: jax.random.PRNGKey,
+    amplitude_range=(0.1, 5.0),
+    phase_range=(0.0, jnp.pi),
+    time_range=(-5, 5),
+):
     """
     Generates a dataset of sinusoidal trajectories with specified amplitude and phase ranges.
 
@@ -29,7 +37,7 @@ def generate_sinusoid_data(J, tau, key, amplitude_range=(0.1, 5.0), phase_range=
     )
 
     # Generate time steps
-    t = jnp.linspace(0, 10, tau)  # Adjust the range as needed
+    t = jnp.linspace(time_range[0], time_range[1], tau)
 
     # Vectorized computation of trajectories
     def compute_trajectory(A, phi):
@@ -43,6 +51,7 @@ def generate_sinusoid_data(J, tau, key, amplitude_range=(0.1, 5.0), phase_range=
     Dys = xys[1]  # Shape: (J, tau, 1)
 
     return Dxs, Dys
+
 
 # Example usage
 if __name__ == '__main__':
