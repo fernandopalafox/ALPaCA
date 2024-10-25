@@ -29,7 +29,7 @@ class ALPaCA(nn.Module):
         self,
         params: dict,
         D: tuple[jnp.ndarray, jnp.ndarray],
-        rng_key: jax.random.keyArray,
+        rng_key: jax.Array
     ) -> jnp.ndarray:
         """
         Offline training of the ALPaCA algorithm.
