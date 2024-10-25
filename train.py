@@ -75,7 +75,7 @@ def main():
     )
 
     # Define training step
-    @jax.jit
+    # @jax.jit
     def train_step(state, D, rng_key):
         loss, grads = jax.value_and_grad(model.loss_offline)(state.params, D, rng_key)
         state = state.apply_gradients(grads=grads)
