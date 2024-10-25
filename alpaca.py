@@ -22,8 +22,8 @@ class ALPaCA(nn.Module):
     @nn.compact
     def __call__(self, x: jnp.ndarray):
         """Applies feature mapping and returns the model's prediction."""
-        phi_x = self.phi_fn(x)
-        return self.Kbar_0.T @ phi_x
+        phi_x = self.phi(x)
+        return (self.Kbar_0.T[None,:,:] @ phi_x[...,None]).squeeze(-1)
 
     def loss_offline(
         self,
