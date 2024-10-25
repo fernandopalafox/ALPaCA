@@ -45,7 +45,7 @@ class ALPaCA(nn.Module):
             jnp.ndarray: averaged loss across sampled trajectories.
         """
 
-        Kbar_0, L0 = params['Kbar_0'], params['L0']
+        Kbar_0, L0 = params["params"]["Kbar_0"], params["params"]["L0"]
 
         # split dataset and initialize RNG keys
         Dxs, Dys = D
