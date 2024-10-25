@@ -49,7 +49,7 @@ class ALPaCA(nn.Module):
         # split dataset and initialize RNG keys
         Dxs, Dys = D
         J, tau, _ = Dxs.shape
-        self.rng_key, subkey_1, subkey_2 = jax.random.split(rng_key, 3)
+        rng_key, subkey_1, subkey_2 = jax.random.split(rng_key, 3)
         t_js = jax.random.randint(subkey_1, (J,), 0, tau - 1)
         dataset_indices = jax.random.randint(subkey_2, (J,), 0, J - 1)
 
