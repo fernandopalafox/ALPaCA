@@ -53,7 +53,10 @@ class ALPaCA(nn.Module):
         rng_key, subkey = jax.random.split(rng_key, 2)
         t_js = jax.random.randint(subkey, (J,), 0, tau - 1)
 
-        def compute_loss(j: int) -> jnp.ndarray:
+        loss = 0.0
+        # I tried vmaping this but trajectory length is variable
+        # TODO: figure out if we can pad the data to a fixed length
+        for j in range(J):
             # sample data for current index
             Dx_j = Dxs[j, :t_js[j], :]  # (t_j, n_x)
             Y_j = Dys[j, :t_js[j], :]    # (t_j, n_y)
@@ -75,12 +78,9 @@ class ALPaCA(nn.Module):
 
             # loss
             y_delta = y_jp1 - Kbar_j.T @ phi_j
-            loss = (
+            loss += (
                 self.n_y * jnp.log(1 + phi_j.T @ Lambda_j_inv_phi)
                 + y_delta.T @ jnp.linalg.solve(Sigma_j, y_delta)
             ) / J
-            return loss
 
-        # parallel computation of losses (they're all independent)
-        losses = jax.vmap(compute_loss)(jnp.arange(J))
-        return jnp.sum(losses)
+        return loss
