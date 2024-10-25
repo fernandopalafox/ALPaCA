@@ -50,7 +50,7 @@ class ALPaCA(nn.Module):
         # split dataset and initialize RNG keys
         Dxs, Dys = D
         J, tau, _ = Dxs.shape
-        rng_key, subkey = jax.random.split(rng_key, 3)
+        rng_key, subkey = jax.random.split(rng_key, 2)
         t_js = jax.random.randint(subkey, (J,), 0, tau - 1)
 
         def compute_loss(j: int) -> jnp.ndarray:
