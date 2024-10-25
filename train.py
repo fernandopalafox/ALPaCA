@@ -6,6 +6,7 @@ import optax
 from data_generation import generate_sinusoid_data
 from alpaca import ALPaCA
 
+
 # Define the feature mapping phi
 class FeatureMapping(nn.Module):
     n_phi: int  # Dimension of the feature mapping output
@@ -20,9 +21,10 @@ class FeatureMapping(nn.Module):
         x = nn.Dense(features=self.n_phi)(x)
         return x
 
+
 def main():
     # Set random seed
-    key = jax.random.PRNGKey(0)
+    key = jax.random.key(0)
 
     # Generate data
     M = 100  # Total number of trajectories
@@ -31,12 +33,14 @@ def main():
     phase_range = (0.0, jnp.pi)
     time_range = (-5, 5)
 
-    Dxs, Dys = generate_sinusoid_data(M, tau, key, amplitude_range, phase_range, time_range)
+    Dxs, Dys = generate_sinusoid_data(
+        M, tau, key, amplitude_range, phase_range, time_range
+    )
 
     # Define model parameters
     n_x = Dxs.shape[-1]  # Input dimension (should be 1)
     n_y = Dys.shape[-1]  # Output dimension (should be 1)
-    n_phi = 16           # Dimension of feature mapping output (can be adjusted)
+    n_phi = 16  # Dimension of feature mapping output
 
     # Define noise covariance
     Sigma_eps = jnp.eye(n_y) * 0.05  # Assumed noise covariance
