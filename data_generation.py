@@ -9,12 +9,12 @@ def generate_sinusoid_data(
     amplitude_range=(0.1, 5.0),
     phase_range=(0.0, jnp.pi),
     time_range=(-5, 5),
-):
+) -> tuple[jnp.ndarray, jnp.ndarray]:
     """
     Generates a dataset of sinusoidal trajectories with specified amplitude and phase ranges.
 
     Args:
-        J (int): Number of trajectories.
+        M (int): Total number of trajectories.
         tau (int): Number of time steps per trajectory.
         key (jax.random.PRNGKey): Random key for reproducibility.
         amplitude_range (tuple): Min and max values for amplitude sampling.
@@ -54,7 +54,7 @@ def generate_sinusoid_data(
 
 
 # Example usage
-if __name__ == '__main__':
+if __name__ == "__main__":
     key = jax.random.PRNGKey(0)
     J = 100  # Number of trajectories
     tau = 50  # Number of time steps per trajectory
