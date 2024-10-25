@@ -49,16 +49,15 @@ class ALPaCA(nn.Module):
         # split dataset and initialize RNG keys
         Dxs, Dys = D
         J, tau, _ = Dxs.shape
-        rng_key, subkey_1, subkey_2 = jax.random.split(rng_key, 3)
-        t_js = jax.random.randint(subkey_1, (J,), 0, tau - 1)
-        dataset_indices = jax.random.randint(subkey_2, (J,), 0, J - 1)
+        rng_key, subkey = jax.random.split(rng_key, 3)
+        t_js = jax.random.randint(subkey, (J,), 0, tau - 1)
 
         def compute_loss(j: int) -> jnp.ndarray:
             # sample data for current index
-            Dx_j = Dxs[dataset_indices[j], :t_js[j], :]  # (t_j, n_x)
-            Y_j = Dys[dataset_indices[j], :t_js[j], :]  # (t_j, n_y)
-            x_jp1 = Dxs[dataset_indices[j], t_js[j], :]  # (n_x)
-            y_jp1 = Dys[dataset_indices[j], t_js[j], :]  # (n_y)
+            Dx_j = Dxs[j, :t_js[j], :]  # (t_j, n_x)
+            Y_j = Dys[j, :t_js[j], :]    # (t_j, n_y)
+            x_jp1 = Dxs[j, t_js[j], :]   # (n_x)
+            y_jp1 = Dys[j, t_js[j], :]   # (n_y)
 
             # compute NN features
             Phi_j = self.phi.apply(params, Dx_j)  # (t_j, n_phi)
