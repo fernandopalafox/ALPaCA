@@ -5,7 +5,9 @@ from flax.training import train_state
 import optax
 from data_generation import generate_sinusoid_data
 from alpaca import ALPaCA
-
+import matplotlib.pyplot as plt
+import time
+import datetime
 
 # Define the feature mapping phi
 class FeatureMapping(nn.Module):
@@ -88,6 +90,8 @@ def main():
     # Since the loss function uses the entire dataset, we might need to implement batching
     num_batches = M // J
 
+    losses = []
+    time_start = time.time()
     for epoch in range(num_epochs):
         # Update random key
         key, subkey_shuffle, subkey_loss = jax.random.split(key, 3)
@@ -108,10 +112,22 @@ def main():
             state, loss = train_step(state, D_batch, subkey_loss)
             epoch_loss += loss
 
-        epoch_loss /= num_batches
+            print(f"    Batch {i}, Loss: {loss}")
 
-        if epoch % 10 == 0:
-            print(f"Epoch {epoch}, Loss: {epoch_loss}")
+        epoch_loss /= num_batches
+        losses.append(epoch_loss)
+        print(f"Epoch {epoch}, Loss: {epoch_loss}")
+
+    time_end = time.time()
+    total_time = time_end - time_start
+    total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+
+    # Plot losses
+    plt.plot(losses)
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title(f"Training Loss (Total Time: {total_time_str})")
+    plt.savefig("figures/training_loss.png")
 
 if __name__ == "__main__":
     main()
