@@ -17,9 +17,9 @@ class FeatureMapping(nn.Module):
     def __call__(self, x):
         # MLP with two hidden layers and 128 units each
         x = nn.Dense(features=128)(x)
-        x = nn.relu(x)
+        x = nn.tanh(x)
         x = nn.Dense(features=128)(x)
-        x = nn.relu(x)
+        x = nn.tanh(x)
         x = nn.Dense(features=self.n_phi)(x)
         return x
 
