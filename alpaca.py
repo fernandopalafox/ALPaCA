@@ -15,8 +15,10 @@ class ALPaCA(nn.Module):
     n_phi: int
 
     def setup(self):
-        self.Kbar_0 = self.param('Kbar_0', nn.zeros_init(), (self.n_phi, self.n_y))
-        self.L0 = self.param('L0', nn.zeros_init(), (self.n_phi, self.n_phi))
+        self.L0 = self.param("L0", L0_initializer, (self.n_phi, self.n_phi))
+        self.Kbar_0 = self.param(
+            "Kbar_0", nn.initializers.normal(stddev=0.1), (self.n_phi, self.n_y)
+        )
         nn.share_scope(self, self.phi)
 
     @nn.compact
@@ -84,3 +86,36 @@ class ALPaCA(nn.Module):
             ) / J
 
         return loss
+
+
+def L0_initializer(key: jax.random.PRNGKey, shape: tuple, dtype=jnp.float32):
+    """
+    Custom initializer for the lower triangular matrix L0.
+
+    Args:
+        key (jax.random.PRNGKey): random key for initialization.
+        shape (tuple): shape of the matrix.
+        dtype (jnp.dtype): data type of the matrix.
+
+    """
+
+    n = shape[0]
+    assert shape[0] == shape[1], "L0 must be a square matrix"
+    # Generate positive values for the diagonal
+    diag_key, off_diag_key = jax.random.split(key)
+    diag_values = jax.random.uniform(
+        diag_key, (n,), minval=0.1, maxval=1.0, dtype=dtype
+    )
+    # Generate random values for the off-diagonal lower triangular part
+    tril_indices = jnp.tril_indices(n, k=-1)
+    num_off_diag_elements = len(tril_indices[0])
+    off_diag_values = jax.random.normal(
+        off_diag_key, (num_off_diag_elements,), dtype=dtype
+    )
+    # Create a zeros matrix
+    L = jnp.zeros((n, n), dtype=dtype)
+    # Set the diagonal
+    L = L.at[jnp.diag_indices(n)].set(diag_values)
+    # Set the off-diagonal lower triangular values
+    L = L.at[tril_indices].set(off_diag_values)
+    return L
