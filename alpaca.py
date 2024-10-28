@@ -85,6 +85,44 @@ class ALPaCA(nn.Module):
 
         return loss
 
+    def online_update(self, params: dict, D: tuple[jnp.ndarray, jnp.ndarray]) -> dict:
+        """
+        Online update of the linear model parameters (Algorithm 2).
+
+        Args:
+            params (dict): model parameters, 'Kbar_0', 'L0', and NN parameters (w).
+            D (tuple): tuple of Dx and Dy, where:
+                - Dx (jnp.ndarray): single input trajectory with shape (tau, n_x)
+                - Dy (jnp.ndarray): single output trajectory with shape (tau, n_y)
+
+        Returns:
+            params (dict): model parameters with updated 'Kbar_t' and 'Lambda_t_inv'
+        """
+
+        Kbar_0, L0 = params["params"]["Kbar_0"], params["params"]["L0"]
+        Dx, Dy = D
+        tau = Dx.shape[0]
+        Lambda_0 = L0 @ L0.T
+        Q_tm1 = Lambda_0 @ Kbar_0
+        Lambda_tm1_inv = jnp.linalg.inv(Lambda_0)
+
+        for t in range(tau):  # TODO: lax.scan this
+            phi_t = self.phi.apply(params, Dx[t])  # (n_phi)
+            Lambda_t_inv = (
+                Lambda_tm1_inv
+                - 1
+                / (1 + phi_t.T @ Lambda_tm1_inv @ phi_t)
+                * (Lambda_tm1_inv @ phi_t)
+                @ (Lambda_tm1_inv @ phi_t).T
+            )
+            Q_t = phi_t @ Dy[t].T + Q_tm1
+            Kbar_t = Lambda_t_inv @ Q_t
+
+        params["params"]["Kbar_t"] = Kbar_t
+        params["params"]["Lambda_t_inv"] = Lambda_t_inv
+
+        return params
+
 
 def L0_initializer(key: jax.random.PRNGKey, shape: tuple, dtype=jnp.float32):
     """
