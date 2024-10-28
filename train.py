@@ -8,6 +8,8 @@ from alpaca import ALPaCA
 import matplotlib.pyplot as plt
 import time
 import datetime
+import pickle
+
 
 # Define the feature mapping phi
 class FeatureMapping(nn.Module):
@@ -122,12 +124,17 @@ def main():
     total_time = time_end - time_start
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
 
+    # Save model
+    with open("data/model_params.pkl", "wb") as f:
+        pickle.dump(state.params, f)
+
     # Plot losses
     plt.plot(losses)
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.title(f"Training Loss (Total Time: {total_time_str})")
     plt.savefig("figures/training_loss.png")
+
 
 if __name__ == "__main__":
     main()
