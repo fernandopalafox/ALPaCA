@@ -107,7 +107,7 @@ class ALPaCA(nn.Module):
         Lambda_tm1_inv = jnp.linalg.inv(Lambda_0)
 
         for t in range(tau):  # TODO: lax.scan this
-            phi_t = self.phi.apply(params, Dx[t])  # (n_phi)
+            phi_t = self.phi.apply(params, Dx[t])[:, jnp.newaxis]  # (n_phi, 1)
             Lambda_t_inv = (
                 Lambda_tm1_inv
                 - 1
@@ -115,7 +115,8 @@ class ALPaCA(nn.Module):
                 * (Lambda_tm1_inv @ phi_t)
                 @ (Lambda_tm1_inv @ phi_t).T
             )
-            Q_t = phi_t @ Dy[t].T + Q_tm1
+            y_t = Dy[t][:, jnp.newaxis]  # (n_y, 1)
+            Q_t = phi_t * y_t + Q_tm1
             Kbar_t = Lambda_t_inv @ Q_t
 
             Lambda_tm1_inv = Lambda_t_inv
@@ -130,7 +131,7 @@ class ALPaCA(nn.Module):
         """
         Predict output given input trajectory.
 
-        Args: 
+        Args:
             params (dict): model parameters
             Dx (jnp.ndarray): input trajectory with shape (tau, n_x)
 
@@ -142,14 +143,22 @@ class ALPaCA(nn.Module):
         # Extract parameters
         if "Kbar_t" not in params["params"]:
             Kbar_t = params["params"]["Kbar_0"]
-            Lambda_t_inv = jnp.linalg.inv(params["params"]["L0"] @ params["params"]["L0"].T)
+            Lambda_t_inv = jnp.linalg.inv(
+                params["params"]["L0"] @ params["params"]["L0"].T
+            )
         else:
             Kbar_t = params["params"]["Kbar_t"]
             Lambda_t_inv = params["params"]["Lambda_t_inv"]
 
+        tau = Dx.shape[0]
         Phi = self.phi.apply(params, Dx)  # (tau, n_phi)
         Ybar = Phi @ Kbar_t  # (tau, n_y)
-        Sigma = (1 + Phi @ Lambda_t_inv @ Phi.T) @ self.Sigma_eps  # (tau, n_y, n_y)
+        Sigma = jnp.zeros((tau, self.n_y, self.n_y))
+        for t in range(tau):  # TODO: Nasty. Figure out broadcasting
+            phi_t = Phi[t]  # (n_phi)
+            Sigma = Sigma.at[t].set(
+                (1 + phi_t.T @ Lambda_t_inv @ phi_t) * self.Sigma_eps
+            )
 
         return Ybar, Sigma
 
