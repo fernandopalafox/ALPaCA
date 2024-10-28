@@ -126,6 +126,32 @@ class ALPaCA(nn.Module):
 
         return params
 
+    def predict(self, params: dict, Dx: jnp.ndarray) -> jnp.ndarray:
+        """
+        Predict output given input trajectory.
+
+        Args: 
+            params (dict): model parameters
+            Dx (jnp.ndarray): input trajectory with shape (tau, n_x)
+
+        Returns:
+            Ybar (jnp.ndarray): predicted output trajectory with shape (tau, n_y)
+            Sigma (jnp.ndarray): predicted output covariance with shape (tau, n_y, n_y)
+        """
+
+        # Extract parameters
+        if "Kbar_t" not in params["params"]:
+            Kbar_t = params["params"]["Kbar_0"]
+            Lambda_t_inv = jnp.linalg.inv(params["params"]["L0"] @ params["params"]["L0"].T)
+        else:
+            Kbar_t = params["params"]["Kbar_t"]
+            Lambda_t_inv = params["params"]["Lambda_t_inv"]
+
+        Phi = self.phi.apply(params, Dx)  # (tau, n_phi)
+        Ybar = Phi @ Kbar_t  # (tau, n_y)
+        Sigma = (1 + Phi @ Lambda_t_inv @ Phi.T) @ self.Sigma_eps  # (tau, n_y, n_y)
+
+        return Ybar, Sigma
 
 def L0_initializer(key: jax.random.PRNGKey, shape: tuple, dtype=jnp.float32):
     """
