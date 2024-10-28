@@ -118,6 +118,9 @@ class ALPaCA(nn.Module):
             Q_t = phi_t @ Dy[t].T + Q_tm1
             Kbar_t = Lambda_t_inv @ Q_t
 
+            Lambda_tm1_inv = Lambda_t_inv
+            Q_tm1 = Q_t
+
         params["params"]["Kbar_t"] = Kbar_t
         params["params"]["Lambda_t_inv"] = Lambda_t_inv
 
