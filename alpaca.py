@@ -162,6 +162,22 @@ class ALPaCA(nn.Module):
 
         return Ybar, Sigma
 
+
+# Define the default feature mapping phi
+class DefaultFeatureMapping(nn.Module):
+    n_phi: int  # Dimension of the feature mapping output
+
+    @nn.compact
+    def __call__(self, x):
+        # MLP with two hidden layers and 128 units each
+        x = nn.Dense(features=128)(x)
+        x = nn.tanh(x)
+        x = nn.Dense(features=128)(x)
+        x = nn.tanh(x)
+        x = nn.Dense(features=self.n_phi)(x)
+        return x
+
+
 def L0_initializer(key: jax.random.PRNGKey, shape: tuple, dtype=jnp.float32):
     """
     Custom initializer for the lower triangular matrix L0.

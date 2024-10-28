@@ -4,27 +4,11 @@ from flax import linen as nn
 from flax.training import train_state
 import optax
 from data_generation import generate_sinusoid_data
-from alpaca import ALPaCA
+from alpaca import ALPaCA, DefaultFeatureMapping
 import matplotlib.pyplot as plt
 import time
 import datetime
 import pickle
-
-
-# Define the feature mapping phi
-class FeatureMapping(nn.Module):
-    n_phi: int  # Dimension of the feature mapping output
-
-    @nn.compact
-    def __call__(self, x):
-        # MLP with two hidden layers and 128 units each
-        x = nn.Dense(features=128)(x)
-        x = nn.tanh(x)
-        x = nn.Dense(features=128)(x)
-        x = nn.tanh(x)
-        x = nn.Dense(features=self.n_phi)(x)
-        return x
-
 
 def main():
     # Set random seed
@@ -50,7 +34,7 @@ def main():
     Sigma_eps = jnp.eye(n_y) * 0.05  # Assumed noise covariance
 
     # Instantiate the feature mapping module
-    phi = FeatureMapping(n_phi=n_phi)
+    phi = DefaultFeatureMapping(n_phi=n_phi)
 
     # Instantiate the ALPaCA model
     model = ALPaCA(phi=phi, Sigma_eps=Sigma_eps, n_y=n_y, n_x=n_x, n_phi=n_phi)
