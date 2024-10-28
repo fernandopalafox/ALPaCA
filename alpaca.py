@@ -133,6 +133,9 @@ def L0_initializer(key: jax.random.PRNGKey, shape: tuple, dtype=jnp.float32):
         shape (tuple): shape of the matrix.
         dtype (jnp.dtype): data type of the matrix.
 
+    Returns:
+        jnp.ndarray: lower triangular matrix with positive diagonal values.
+
     """
 
     n = shape[0]
