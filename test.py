@@ -7,11 +7,11 @@ import matplotlib.pyplot as plt
 
 # Generate data
 M = 1  # Total number of trajectories
-tau = 20  # Number of time steps per trajectory
+tau = 50  # Number of time steps per trajectory
 amplitude_range = (0.1, 5.0)
 phase_range = (0.0, jnp.pi)
 time_range = (-5, 5)
-key = jax.random.key(0)
+key = jax.random.key(3)
 
 Dx, Dy = generate_sinusoid_data(
     M, tau, key, amplitude_range, phase_range, time_range
@@ -35,6 +35,10 @@ model = ALPaCA(phi=phi, Sigma_eps=Sigma_eps, n_y=n_y, n_x=n_x, n_phi=n_phi)
 with open("data/model_params.pkl", "rb") as f:
     params = pickle.load(f)
 
+# No meta learning case
+with open("data/model_params_no_meta.pkl", "rb") as f:
+    params_no_meta = pickle.load(f)
+
 # Run the online update
 context_size = 3
 context_indices = jnp.sort(
@@ -43,10 +47,7 @@ context_indices = jnp.sort(
 online_Dx = Dx[context_indices]
 online_Dy = Dy[context_indices]
 params = model.online_update(params, (online_Dx, online_Dy))
-
-# No meta learning case
-with open("data/model_params_no_meta.pkl", "rb") as f:
-    params_no_meta = pickle.load(f)
+params_no_meta = model.online_update(params_no_meta, (online_Dx, online_Dy))
 
 # Predict
 Ybar_meta, Sigma_meta = model.predict(params, Dx)
@@ -73,12 +74,12 @@ axes[0].set_title("With Meta-Learning")
 
 # Without Meta-Learning
 axes[1].plot(Dx, Dy, label="True", color="blue")
-axes[1].plot(Dx, Ybar_no_meta, label="Predicted (No Meta)", color="red")
+axes[1].plot(Dx, Ybar_no_meta, label="Predicted (No Meta)", color="orange")
 axes[1].fill_between(
     Dx[:,0],
     Ybar_no_meta[:,0] - 2 * jnp.sqrt(Sigma_meta).flatten(),
     Ybar_no_meta[:,0] + 2 * jnp.sqrt(Sigma_meta).flatten(),
-    color="red",
+    color="orange",
     alpha=0.3,
 )
 axes[1].plot(online_Dx, online_Dy, "x", color="black", markersize=10, markeredgewidth=2)
