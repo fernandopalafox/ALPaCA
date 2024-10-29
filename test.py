@@ -12,7 +12,7 @@ tau = 50  # Number of time steps per trajectory
 amplitude_range = (0.1, 5.0)
 phase_range = (0.0, jnp.pi)
 time_range = (-5, 5)
-key = jax.random.key(3)
+key = jax.random.key(7)
 
 Dx, Dy = generate_sinusoid_data(M, tau, key, amplitude_range, phase_range, time_range)
 Dx = Dx.squeeze(0)
