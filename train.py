@@ -16,7 +16,7 @@ def main():
 
     # Generate data
     M = 100  # Total number of trajectories
-    tau = 50  # Number of time steps per trajectory
+    tau = 20  # Number of time steps per trajectory
     amplitude_range = (0.1, 5.0)
     phase_range = (0.0, jnp.pi)
     time_range = (-5, 5)
