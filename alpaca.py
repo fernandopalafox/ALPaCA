@@ -126,8 +126,9 @@ class ALPaCA(nn.Module):
             Lambda_tm1_inv = Lambda_t_inv
             Q_tm1 = Q_t
 
-        params["params"]["Kbar_t"] = Kbar_t
-        params["params"]["Lambda_t_inv"] = Lambda_t_inv
+        if tau > 0:
+            params["params"]["Kbar_t"] = Kbar_t
+            params["params"]["Lambda_t_inv"] = Lambda_t_inv
 
         return params
 
