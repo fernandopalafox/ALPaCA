@@ -56,6 +56,8 @@ class ALPaCA(nn.Module):
         loss = 0.0
         # I tried vmaping this but trajectory length is variable
         # TODO: figure out if we can pad the data to a fixed length
+        # TODO: average loss over entire trajectory length.
+        #       See last sentence p. 7 of the paper.
         for j in range(J):
             # sample data for current index
             Dx_j = Dxs[j, : t_js[j], :]  # (t_j, n_x)
@@ -67,11 +69,11 @@ class ALPaCA(nn.Module):
             Phi_j = self.phi.apply(params, Dx_j)  # (t_j, n_phi)
             phi_jp1 = self.phi.apply(params, x_jp1)  # (n_phi)
 
-            # compute Lambda_j and Sigma_j using stable solve instead of inv
+            # compute Lambda_j and Sigma_jp1 using stable solve instead of inv
             Lambda_0 = L0 @ L0.T
             Lambda_j = Phi_j.T @ Phi_j + Lambda_0
             Lambda_j_inv_phi = jnp.linalg.solve(Lambda_j, phi_jp1)  # avoid inversion
-            Sigma_j = (1 + phi_jp1.T @ Lambda_j_inv_phi) * self.Sigma_eps
+            Sigma_jp1 = (1 + phi_jp1.T @ Lambda_j_inv_phi) * self.Sigma_eps
 
             # compute Kbar_j
             Kbar_j = jnp.linalg.solve(Lambda_j, Phi_j.T @ Y_j + Lambda_0 @ Kbar_0)
@@ -80,7 +82,7 @@ class ALPaCA(nn.Module):
             y_delta = y_jp1 - Kbar_j.T @ phi_jp1
             loss += (
                 self.n_y * jnp.log(1 + phi_jp1.T @ Lambda_j_inv_phi)
-                + y_delta.T @ jnp.linalg.solve(Sigma_j, y_delta)
+                + y_delta.T @ jnp.linalg.solve(Sigma_jp1, y_delta)
             ) / J
 
         return loss
