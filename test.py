@@ -44,21 +44,47 @@ online_Dx = Dx[context_indices]
 online_Dy = Dy[context_indices]
 params = model.online_update(params, (online_Dx, online_Dy))
 
-# Predict
-Ybar, Sigma = model.predict(params, Dx)
+# No meta learning case
+with open("data/model_params_no_meta.pkl", "rb") as f:
+    params_no_meta = pickle.load(f)
 
-# Plot the results
-plt.figure(figsize=(12, 6))
-plt.plot(Dx[:, 0], Dy[:, 0], label="True")
-plt.plot(Dx[:, 0], Ybar[:, 0], label="Predicted")
-plt.fill_between(
-    Dx[:, 0],
-    Ybar[:, 0] - 2 * jnp.sqrt(Sigma.squeeze()),
-    Ybar[:, 0] + 2 * jnp.sqrt(Sigma.squeeze()),
+# Predict
+Ybar_meta, Sigma_meta = model.predict(params, Dx)
+Ybar_no_meta, Sigma_no_meta = model.predict(params_no_meta, Dx)
+
+# Plot side-by-side subplots to show meta vs non-meta predictions
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+# With Meta-Learning
+axes[0].plot(Dx, Dy, label="True", color="blue")
+axes[0].plot(Dx, Ybar_meta, label="Predicted (Meta)", color="orange")
+axes[0].fill_between(
+    Dx[:,0],
+    Ybar_meta[:,0] - 2 * jnp.sqrt(Sigma_meta).flatten(),
+    Ybar_meta[:,0] + 2 * jnp.sqrt(Sigma_meta).flatten(),
+    color="orange",
     alpha=0.3,
 )
-plt.plot(online_Dx[:,0], online_Dy[:, 0], "x", color='black', markersize=10, markeredgewidth=2)
-plt.legend()
-plt.xlim(-5, 5)
-plt.ylim(-5, 5)
-plt.savefig("figures/test.png")
+axes[0].plot(online_Dx, online_Dy, "x", color="black", markersize=10, markeredgewidth=2)
+axes[0].legend()
+axes[0].set_xlim(-5, 5)
+axes[0].set_ylim(-5, 5)
+axes[0].set_title("With Meta-Learning")
+
+# Without Meta-Learning
+axes[1].plot(Dx, Dy, label="True", color="blue")
+axes[1].plot(Dx, Ybar_no_meta, label="Predicted (No Meta)", color="red")
+axes[1].fill_between(
+    Dx[:,0],
+    Ybar_no_meta[:,0] - 2 * jnp.sqrt(Sigma_meta).flatten(),
+    Ybar_no_meta[:,0] + 2 * jnp.sqrt(Sigma_meta).flatten(),
+    color="red",
+    alpha=0.3,
+)
+axes[1].plot(online_Dx, online_Dy, "x", color="black", markersize=10, markeredgewidth=2)
+axes[1].legend()
+axes[1].set_xlim(-5, 5)
+axes[1].set_ylim(-5, 5)
+axes[1].set_title("Without Meta-Learning")
+
+plt.savefig("figures/predictions.png")
