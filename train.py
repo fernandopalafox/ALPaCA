@@ -10,6 +10,7 @@ import time
 import datetime
 import pickle
 
+
 def main():
     # Set random seed
     key = jax.random.key(0)
@@ -42,13 +43,8 @@ def main():
     meta_learn = False
 
     # Initialize model parameters
-    @jax.jit
-    def init_model_params(rng_key):
-        x_init = jnp.ones((1, n_x))
-        params = model.init(rng_key, x_init)
-        return params
-
-    params = init_model_params(key)
+    x_init = jnp.ones((1, n_x))
+    params = model.init(key, x_init)
 
     # Define optimizer
     learning_rate = 1e-3
