@@ -28,10 +28,10 @@ def main():
     # Define model parameters
     n_x = Dxs.shape[-1]  # Input dimension (should be 1)
     n_y = Dys.shape[-1]  # Output dimension (should be 1)
-    n_phi = 16  # Dimension of feature mapping output
+    n_phi = 32  # Dimension of feature mapping output
 
     # Define noise covariance
-    Sigma_eps = jnp.eye(n_y) * 0.05  # Assumed noise covariance
+    Sigma_eps = jnp.eye(n_y) * 0.02  # Assumed noise covariance
 
     # Instantiate the feature mapping module
     phi = DefaultFeatureMapping(n_phi=n_phi)
