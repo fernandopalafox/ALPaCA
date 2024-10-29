@@ -145,11 +145,14 @@ class ALPaCA(nn.Module):
         # Extract parameters
         if "Kbar_t" not in params["params"]:
             Kbar_t = params["params"]["Kbar_0"]
+        else:
+            Kbar_t = params["params"]["Kbar_t"]
+
+        if "Lambda_t_inv" not in params["params"]:
             Lambda_t_inv = jnp.linalg.inv(
                 params["params"]["L0"] @ params["params"]["L0"].T
             )
         else:
-            Kbar_t = params["params"]["Kbar_t"]
             Lambda_t_inv = params["params"]["Lambda_t_inv"]
 
         tau = Dx.shape[0]
