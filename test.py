@@ -12,7 +12,7 @@ tau = 50  # Number of time steps per trajectory
 amplitude_range = (0.1, 5.0)
 phase_range = (0.0, jnp.pi)
 time_range = (-5, 5)
-key = jax.random.key(7)
+key = jax.random.key(9)
 
 Dx, Dy = generate_sinusoid_data(M, tau, key, amplitude_range, phase_range, time_range)
 Dx = Dx.squeeze(0)
@@ -31,7 +31,7 @@ phi = DefaultFeatureMapping(n_phi=n_phi)
 
 # Load models
 alpaca = ALPaCA(phi=phi, Sigma_eps=Sigma_eps, n_y=n_y, n_x=n_x, n_phi=n_phi)
-gp_scale = 1.0
+gp_scale = 0.5
 gp = GaussianProcess(rbf, gp_scale, Sigma_eps[0, 0])
 
 # Load parameters
@@ -88,7 +88,7 @@ for context_size in context_sizes:
 
 # Plot side-by-side subplots to show meta vs non-meta predictions
 num_rows = len(context_sizes)
-fig, axes = plt.subplots(num_rows, 3, figsize=(15, 1 * num_rows))
+fig, axes = plt.subplots(num_rows, 3, figsize=(12, 1.5 * num_rows))
 if num_rows == 1:
     axes = axes[jnp.newaxis, :]
 
@@ -165,7 +165,7 @@ for i, context_size in enumerate(context_sizes):
 
 axes[0, 0].set_title(f"ALPaCA")
 axes[0, 1].set_title(f"ALPaCA (no meta)")
-axes[0, 2].set_title(f"GPR")
+axes[0, 2].set_title(f"Gaussian Process")
 
 plt.tight_layout()
 plt.savefig("figures/predictions.png")
