@@ -88,7 +88,9 @@ for context_size in context_sizes:
 
 # Plot side-by-side subplots to show meta vs non-meta predictions
 num_rows = len(context_sizes)
-fig, axes = plt.subplots(num_rows, 3, figsize=(18, 2 * num_rows))
+fig, axes = plt.subplots(num_rows, 3, figsize=(15, 1 * num_rows))
+if num_rows == 1:
+    axes = axes[jnp.newaxis, :]
 
 for i, context_size in enumerate(context_sizes):
     Ybar_meta = Ybar_metas[i]
