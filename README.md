@@ -8,6 +8,6 @@ Read the paper [here](https://arxiv.org/abs/1807.08912).
 
 Code should be pretty self-explanatory.
 
-Example plot given by `test.py`:
+Example plot given by `test.py` meant to reroduces Figure 2 from the paper:
 
-<img src="figures/predictions.png" alt="predictions" width=350/>
+<img src="figures/predictions.png" alt="predictions" width=400/>
