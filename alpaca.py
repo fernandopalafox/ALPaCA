@@ -31,7 +31,7 @@ class ALPaCA(nn.Module):
         return (self.Kbar_0.T[None, :, :] @ phi_x[..., None]).squeeze(-1)
 
     def loss_offline(
-        self, params: dict, D: tuple[jnp.ndarray, jnp.ndarray], rng_key: jax.Array
+        self, params: dict, D: tuple[jnp.ndarray, jnp.ndarray], masks: jnp.ndarray
     ) -> jnp.ndarray:
         """
         Offline training of the ALPaCA algorithm.
@@ -42,6 +42,7 @@ class ALPaCA(nn.Module):
                 - Dxs (jnp.ndarray): input trajectories with shape (J, tau, n_x)
                 - Dys (jnp.ndarray): target trajectories with shape (J, tau, n_y)
                 - Mini-batch of J trajectories from a dataset of M trajectories.
+            masks (jax.ndarray): mask for the trajectories, shape (J, tau)
 
         Returns:
             jnp.ndarray: averaged loss across sampled trajectories.
@@ -52,40 +53,40 @@ class ALPaCA(nn.Module):
         # split dataset and initialize RNG keys
         Dxs, Dys = D
         J, tau, _ = Dxs.shape
-        rng_key, subkey = jax.random.split(rng_key, 2)
-        t_js = jax.random.randint(subkey, (J,), 0, tau - 1)
 
         loss = 0.0
-        # I tried vmaping this but trajectory length is variable
-        # TODO: figure out if we can pad the data to a fixed length
         # TODO: average loss over entire trajectory length.
         #       See last sentence p. 7 of the paper.
         for j in range(J):
             # sample data for current index
-            Dx_j = Dxs[j, : t_js[j], :]  # (t_j, n_x)
-            Y_j = Dys[j, : t_js[j], :]  # (t_j, n_y)
-            x_jp1 = Dxs[j, t_js[j], :]  # (n_x)
-            y_jp1 = Dys[j, t_js[j], :]  # (n_y)
+            mask = masks[j]  # (tau, 1)
+            prediction_index = jnp.sum(mask, dtype=int)  # (1)
+            Dx_j = Dxs[j]  # (tau, n_x)
+            Y_j = Dys[j]  # (tau, n_y)
+            x_jp1 = Dxs[j, prediction_index, :]  # (n_x)
+            y_jp1 = Dys[j, prediction_index, :]  # (n_y)
 
             # compute NN features
-            Phi_j = self.phi.apply(params, Dx_j)  # (t_j, n_phi)
+            Phi_j = self.phi.apply(params, Dx_j)  # (tau, n_phi)
             phi_jp1 = self.phi.apply(params, x_jp1)  # (n_phi)
 
             # compute Lambda_j and Sigma_jp1 using stable solve instead of inv
             Lambda_0 = L0 @ L0.T
-            Lambda_j = Phi_j.T @ Phi_j + Lambda_0
+            Lambda_j = Phi_j.T @ (mask * Phi_j) + Lambda_0
             Lambda_j_inv_phi = jnp.linalg.solve(Lambda_j, phi_jp1)  # avoid inversion
             Sigma_jp1 = (1 + phi_jp1.T @ Lambda_j_inv_phi) * self.Sigma_eps
 
             # compute Kbar_j
-            Kbar_j = jnp.linalg.solve(Lambda_j, Phi_j.T @ Y_j + Lambda_0 @ Kbar_0)
+            Kbar_j = jnp.linalg.solve(Lambda_j, Phi_j.T @ (mask * Y_j) + Lambda_0 @ Kbar_0)
 
             # loss
             y_delta = y_jp1 - Kbar_j.T @ phi_jp1
             loss += (
                 self.n_y * jnp.log(1 + phi_jp1.T @ Lambda_j_inv_phi)
                 + y_delta.T @ jnp.linalg.solve(Sigma_jp1, y_delta)
-            ) / J
+            )
+            
+        loss /= J
 
         return loss
 

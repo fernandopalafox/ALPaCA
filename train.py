@@ -61,20 +61,21 @@ def main():
     )
 
     # Define training step
-    # @jax.jit
-    def train_step(state, D, rng_key):
-        loss, grads = jax.value_and_grad(model.loss_offline)(state.params, D, rng_key)
-        state = state.apply_gradients(grads=grads)
+    @jax.jit
+    def train_step(state, D, masks):
+        loss, grads = jax.value_and_grad(model.loss_offline)(state.params, D, masks)
 
         # Set Kbar_0 and L0 gradients to zero if not meta-learning
         if not meta_learn:
             grads["params"]["Kbar_0"] = jnp.zeros_like(grads["params"]["Kbar_0"])
             grads["params"]["L0"] = jnp.zeros_like(grads["params"]["L0"])
 
+        state = state.apply_gradients(grads=grads)
+        
         return state, loss
 
     # Training parameters
-    num_epochs = 500
+    num_epochs = 1000
     J = 10  # Mini-batch size
 
     # Since the loss function uses the entire dataset, we might need to implement batching
@@ -85,12 +86,19 @@ def main():
     try:
         for epoch in range(num_epochs):
             # Update random key
-            key, subkey_shuffle, subkey_loss = jax.random.split(key, 3)
+            key, subkey_shuffle, subkey_masks = jax.random.split(key, 3)
 
             # Shuffle data
             permutation = jax.random.permutation(subkey_shuffle, M)
             Dxs_shuffled = Dxs[permutation]
             Dys_shuffled = Dys[permutation]
+
+            # Sample trajectory lengths and create masks
+            trajectory_lengths = jax.random.randint(subkey_masks, (J,), 1, tau + 1)
+            indices = jnp.arange(tau)  # (tau,)
+            indices = indices[None, :]    # (1, tau)
+            masks = (indices < trajectory_lengths[:, None]).astype(jnp.float32) # (J, tau)
+            masks = masks[:, :, jnp.newaxis]  # add axis for easy broadcasting later
 
             epoch_loss = 0.0
             for i in range(num_batches):
@@ -100,10 +108,8 @@ def main():
                 D_batch = (Dxs_shuffled[start:end], Dys_shuffled[start:end])
 
                 # Perform a training step
-                state, loss = train_step(state, D_batch, subkey_loss)
+                state, loss = train_step(state, D_batch, masks)
                 epoch_loss += loss
-
-                print(f"    Batch {i}, Loss: {loss}")
 
             epoch_loss /= num_batches
             losses.append(epoch_loss)
