@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp
-
+import pickle
 
 def generate_sinusoid_data(
     J: int,
@@ -56,14 +56,23 @@ def generate_sinusoid_data(
 # Example usage
 if __name__ == "__main__":
     key = jax.random.PRNGKey(0)
-    J = 100  # Number of trajectories
+    J = 1  # Number of trajectories
     tau = 50  # Number of time steps per trajectory
 
     # You can specify custom ranges if needed
     amplitude_range = (0.1, 5.0)
     phase_range = (0.0, jnp.pi)
 
+    # Single trajectory example
+    amplitude_range = (2.5, 2.5)
+    phase_range = (jnp.pi/2, jnp.pi/2)
+
     Dxs, Dys = generate_sinusoid_data(J, tau, key, amplitude_range, phase_range)
 
     # Print the shapes of the generated data
     print(Dxs.shape, Dys.shape)
+
+    # Save the generated data
+    with open("data/sinusoid_single.pkl", "wb") as f:
+        pickle.dump((Dxs, Dys), f)
+

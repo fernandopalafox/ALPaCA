@@ -1,58 +1,42 @@
 import jax
 import jax.numpy as jnp
-from flax import linen as nn
-from flax.training import train_state
+from flax.training.train_state import TrainState
 import optax
-from data_generation import generate_sinusoid_data
 from alpaca import ALPaCA, DefaultFeatureMapping
 import matplotlib.pyplot as plt
 import time
 import datetime
 import pickle
+import yaml
 
 
-def main():
+def main(config, data_loader=None):
     # Set random seed
-    key = jax.random.key(0)
-
-    # Generate data
-    M = 100  # Total number of trajectories
-    tau = 20  # Number of time steps per trajectory
-    amplitude_range = (0.1, 5.0)
-    phase_range = (0.0, jnp.pi)
-    time_range = (-5, 5)
-
-    Dxs, Dys = generate_sinusoid_data(
-        M, tau, key, amplitude_range, phase_range, time_range
-    )
+    key = jax.random.key(config["seed"])
 
     # Define model parameters
-    n_x = Dxs.shape[-1]  # Input dimension (should be 1)
-    n_y = Dys.shape[-1]  # Output dimension (should be 1)
-    n_phi = 32  # Dimension of feature mapping output
+    n_x = config["n_x"]  # Input dimension (should be 1)
+    n_y = config["n_y"]  # Output dimension (should be 1)
+    n_phi = config["n_phi"]  # Dimension of feature mapping output
 
     # Define noise covariance
-    Sigma_eps = jnp.eye(n_y) * 0.02  # Assumed noise covariance
+    Sigma_eps = jnp.eye(n_y) * config["sigma_eps"]  # Assumed noise covariance
 
     # Instantiate the feature mapping module
     phi = DefaultFeatureMapping(n_phi=n_phi)
 
     # Instantiate the ALPaCA model
     model = ALPaCA(phi=phi, Sigma_eps=Sigma_eps, n_y=n_y, n_x=n_x, n_phi=n_phi)
-    params_name = "data/model_params_no_meta.pkl"
-    meta_learn = False
+    model_params_name = "data/" + config["model_params_name"]
+    meta_learn = config["meta_learn"]
 
     # Initialize model parameters
     x_init = jnp.ones((1, n_x))
     params = model.init(key, x_init)
 
     # Define optimizer
-    learning_rate = 1e-3
+    learning_rate = config["learning_rate"]
     optimizer = optax.adam(learning_rate)
-
-    # Create training state
-    class TrainState(train_state.TrainState):
-        pass
 
     state = TrainState.create(
         apply_fn=model.apply,
@@ -71,14 +55,20 @@ def main():
             grads["params"]["L0"] = jnp.zeros_like(grads["params"]["L0"])
 
         state = state.apply_gradients(grads=grads)
-        
+
         return state, loss
 
     # Training parameters
-    num_epochs = 1000
-    J = 10  # Mini-batch size
+    num_epochs = config["num_epochs"]
+    J = config["batch_size"]
 
-    # Since the loss function uses the entire dataset, we might need to implement batching
+    # Load data
+    if data_loader is None:
+        with open(config["data_path"], "rb") as f:
+            Dxs, Dys = pickle.load(f)
+        M = Dxs.shape[0]  # Total number of trajectories
+        tau = Dxs.shape[1]  # Number of time steps per trajectory
+
     num_batches = M // J
 
     losses = []
@@ -96,8 +86,10 @@ def main():
             # Sample trajectory lengths and create masks
             trajectory_lengths = jax.random.randint(subkey_masks, (J,), 1, tau + 1)
             indices = jnp.arange(tau)  # (tau,)
-            indices = indices[None, :]    # (1, tau)
-            masks = (indices < trajectory_lengths[:, None]).astype(jnp.float32) # (J, tau)
+            indices = indices[None, :]  # (1, tau)
+            masks = (indices < trajectory_lengths[:, None]).astype(
+                jnp.float32
+            )  # (J, tau)
             masks = masks[:, :, jnp.newaxis]  # add axis for easy broadcasting later
 
             epoch_loss = 0.0
@@ -113,10 +105,10 @@ def main():
 
             epoch_loss /= num_batches
             losses.append(epoch_loss)
-            print(f"Epoch {epoch}, Loss: {epoch_loss}")
+            print(f"Epoch {epoch}, Loss: {epoch_loss:.3e}")
 
     except KeyboardInterrupt:
-        with open(params_name, "wb") as f:
+        with open(model_params_name, "wb") as f:
             pickle.dump(state.params, f)
 
     time_end = time.time()
@@ -124,7 +116,7 @@ def main():
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
 
     # Save model
-    with open(params_name, "wb") as f:
+    with open(model_params_name, "wb") as f:
         pickle.dump(state.params, f)
 
     # Plot losses
@@ -136,4 +128,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    cfg_filename = "configs/sinusoid.yml"
+    with open(cfg_filename, "r") as ymlfile:
+        config = yaml.safe_load(ymlfile)
+    main(config)

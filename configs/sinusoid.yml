@@ -1,0 +1,14 @@
+data_path : "data/sinusoid_single.pkl"
+
+seed : 0
+n_x : 1
+n_y : 1
+n_phi : 32
+sigma_eps : 0.0002
+model_params_name : "sinusoid"
+
+meta_learn : True
+
+learning_rate : 0.001
+num_epochs : 1000
+batch_size : 1
